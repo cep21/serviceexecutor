@@ -7,6 +7,18 @@ import (
 	"time"
 )
 
+// ShutdownOnSignals is a helper that wraps a SiganlWatcher for your Multi service.  It will setup signal watcher
+// that call Shutdown on toShutdown when any of signals is seen by the signal watcher.  The Shutdown context
+// is timed out by shutdownTimeout.
+func ShutdownOnSignals(toShutdown *Multi, shutdownTimeout time.Duration, signals ...os.Signal) {
+	w := SignalWatcher{
+		Service:         toShutdown,
+		Signals:         signals,
+		ShutdownTimeout: shutdownTimeout,
+	}
+	toShutdown.Services = append(toShutdown.Services, &w)
+}
+
 // SignalWatcher allows easily hooking into os signals to shutdown long running services.
 type SignalWatcher struct {
 	// Service is the Service that should receive a Shutdown signal.
