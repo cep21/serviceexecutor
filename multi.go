@@ -15,6 +15,29 @@ type MultiHooks struct {
 	OnServiceShutdownFinished func(s Service, err error)
 }
 
+func (m MultiHooks) onServiceRunStarted(s Service) {
+	if m.OnServiceRunStarted != nil {
+		m.OnServiceRunStarted(s)
+	}
+}
+
+func (m MultiHooks) onServiceRunFinished(s Service, err error) {
+	if m.OnServiceRunFinished != nil {
+		m.OnServiceRunFinished(s, err)
+	}
+}
+
+func (m MultiHooks) onServiceShutdownStarted(s Service) {
+	if m.OnServiceShutdownStarted != nil {
+		m.OnServiceShutdownStarted(s)
+	}
+}
+func (m MultiHooks) onServiceShutdownFinished(s Service, err error) {
+	if m.OnServiceShutdownFinished != nil {
+		m.OnServiceShutdownFinished(s, err)
+	}
+}
+
 // States: (init) -> (setup ran) -> (run) -> (shutdown) ->
 
 // Multi tracks multiple running services.  It is an error to modify Multi after you have called any method on it.
@@ -66,7 +89,7 @@ func (m *Multi) Run() error {
 		}
 	}
 	wg := sync.WaitGroup{}
-	errs := make([]error, 0, len(m.Services))
+	errs := make([]error, len(m.Services))
 	m.runOnce.Do(func() {
 		for i, s := range m.Services {
 			wg.Add(1)
@@ -74,9 +97,9 @@ func (m *Multi) Run() error {
 			s := s
 			go func() {
 				defer wg.Done()
-				m.Hooks.OnServiceRunStarted(s)
+				m.Hooks.onServiceRunStarted(s)
 				err := s.Run()
-				m.Hooks.OnServiceRunFinished(s, err)
+				m.Hooks.onServiceRunFinished(s, err)
 				errs[i] = err
 			}()
 		}
@@ -95,12 +118,12 @@ func (m *Multi) Shutdown(ctx context.Context) error {
 	m.runOnce.Do(func() {
 		services = nil
 	})
-	errs := make([]error, 0, len(services))
-	for i := len(services); i >= 0; i-- {
+	errs := make([]error, len(services))
+	for i := len(services) - 1; i >= 0; i-- {
 		s := services[i]
-		m.Hooks.OnServiceShutdownStarted(s)
+		m.Hooks.onServiceShutdownStarted(s)
 		err := s.Shutdown(ctx)
-		m.Hooks.OnServiceShutdownFinished(s, err)
+		m.Hooks.onServiceShutdownFinished(s, err)
 		errs[i] = err
 	}
 	return errFromManyErrors(errs)
