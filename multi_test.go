@@ -20,6 +20,7 @@ type testService struct {
 	runErr        error
 	shutdownErr   error
 	setupErr      error
+	onRun         func()
 	n             Noop
 }
 
@@ -27,6 +28,9 @@ func (t *testService) Run() error {
 	atomic.AddInt32(&t.runCount, 1)
 	if t.runErr != nil {
 		return t.runErr
+	}
+	if t.onRun != nil {
+		t.onRun()
 	}
 	return t.n.Run()
 }
@@ -55,14 +59,16 @@ func TestMultiBasic(t *testing.T) {
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(2)
+	ts.onRun = func() {
+		go func() {
+			defer wg.Done()
+			time.Sleep(time.Millisecond)
+			require.NoError(t, m.Shutdown(context.Background()))
+		}()
+	}
 	go func() {
 		defer wg.Done()
 		require.NoError(t, m.Run())
-	}()
-	go func() {
-		defer wg.Done()
-		time.Sleep(time.Millisecond)
-		require.NoError(t, m.Shutdown(context.Background()))
 	}()
 	wg.Wait()
 	require.EqualValues(t, 1, ts.setupCount)
