@@ -1,3 +1,5 @@
+# DRAFT PROJECT.  NOT READY TO USE
+
 # serviceexecutor
 [![CircleCI](https://circleci.com/gh/cep21/serviceexecutor.svg)](https://circleci.com/gh/cep21/serviceexecutor)
 [![GoDoc](https://godoc.org/github.com/cep21/serviceexecutor?status.svg)](https://godoc.org/github.com/cep21/serviceexecutor)
