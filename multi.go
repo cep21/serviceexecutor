@@ -2,7 +2,6 @@ package serviceexecutor
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 )
@@ -81,7 +80,7 @@ func (m *Multi) Setup() error {
 // any goroutines, none will spawn.
 func (m *Multi) Run() error {
 	if atomic.SwapInt32(&m.runCalled, 1) == 1 {
-		return errors.New("run called twice")
+		return &repeatedCalls{msg: "run called twice"}
 	}
 	if !m.setupCalled {
 		if err := m.Setup(); err != nil {
@@ -112,7 +111,7 @@ func (m *Multi) Run() error {
 // Shutdown is called before we can call "Run" on services, it does nothing and returns nil.
 func (m *Multi) Shutdown(ctx context.Context) error {
 	if atomic.SwapInt32(&m.shutdownCalled, 1) == 1 {
-		return errors.New("shutdown called twice")
+		return &repeatedCalls{msg: "shutdown called twice"}
 	}
 	services := m.Services
 	m.runOnce.Do(func() {

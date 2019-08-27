@@ -32,3 +32,21 @@ func errFromManyErrors(errs []error) error {
 	}
 	return &multiError{errs: nonNil}
 }
+
+type RepeatedCalls interface {
+	error
+	RepeatedCalls()
+}
+
+type repeatedCalls struct {
+	msg string
+}
+
+func (r *repeatedCalls) Error() string {
+	return r.msg
+}
+
+func (r *repeatedCalls) RepeatedCalls() {
+}
+
+var _ RepeatedCalls = &repeatedCalls{}

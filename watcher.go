@@ -37,7 +37,7 @@ func (w *SignalWatcher) Setup() error {
 func (w *SignalWatcher) Run() error {
 	_, ok := <-w.ch
 	if ok {
-		ctx := w.ShutdownContext()
+		ctx := w.shutdownContext()
 		if w.ShutdownTimeout != 0 {
 			var onDone func()
 			ctx, onDone = context.WithTimeout(ctx, w.ShutdownTimeout)
@@ -57,6 +57,13 @@ func (w *SignalWatcher) Shutdown(ctx context.Context) error {
 	}
 	close(w.ch)
 	return nil
+}
+
+func (w *SignalWatcher) shutdownContext() context.Context {
+	if w.ShutdownContext == nil {
+		return context.Background()
+	}
+	return w.ShutdownContext()
 }
 
 var _ Setupable = &SignalWatcher{}
