@@ -1,42 +1,22 @@
 package serviceexecutor
 
-import "context"
+import (
+	"context"
+)
 
+// Service is intended to be a long running daemon style goroutine of your program.
 type Service interface {
+	// Run should block and not return until the service either has a fatal error during execution (returned via err)
+	// or Shutdown is called on the service.
 	Run() error
+	// Shutdown should end a current (and prevent future) Run() calls.  Shutdown should try to exit only when it is
+	// sure that Run() has finished.  It should not persist longer than the length of ctx.
 	Shutdown(ctx context.Context) error
 }
 
+// Setupable is an optional interface of Service.  Services that implement Setupable have their Setup function called
+// by Multi before Run is executed.
 type Setupable interface {
+	Service
 	Setup() error
-}
-
-type Hooks struct {
-	OnServiceRunFinished func(err error)
-	OnServiceShutdownFinished func(err error)
-}
-
-type Multi struct {
-	Services []Service
-	Hooks Hooks
-}
-
-func (m *Multi) Run() error {
-	for _, s := range m.Services {
-		go func() {
-			err := s.Run()
-			m.Hooks.OnServiceRunFinished(err)
-		}()
-	}
-	return nil
-}
-
-func (m *Multi) Shutdown(ctx context.Context) error {
-	for i :=len(m.Services);i>=0;i-- {
-		err := m.Services[i].Shutdown(ctx)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
