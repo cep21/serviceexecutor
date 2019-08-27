@@ -13,7 +13,7 @@ type ServiceFunc struct {
 }
 
 // Setup simply executes OnSetup if it is non nil.  If it is nil, it returns nil.
-func (f *ServiceFunc) Setup() error {
+func (f ServiceFunc) Setup() error {
 	if f.OnSetup == nil {
 		return nil
 	}
@@ -21,11 +21,11 @@ func (f *ServiceFunc) Setup() error {
 }
 
 // Run simply executes OnRun
-func (f *ServiceFunc) Run() error {
+func (f ServiceFunc) Run() error {
 	return f.OnRun()
 }
 
 // Shutdown simply executes OnShutdown
-func (f *ServiceFunc) Shutdown(ctx context.Context) error {
+func (f ServiceFunc) Shutdown(ctx context.Context) error {
 	return f.OnShutdown(ctx)
 }

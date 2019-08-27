@@ -1,21 +1,34 @@
 package serviceexecutor
 
-import "context"
+import (
+	"context"
+	"sync"
+)
 
 // Noop is a service that does nothing
 type Noop struct {
-	ch chan struct{}
+	once sync.Once
+	ch   chan struct{}
 }
 
-func (n Noop) Run() error {
-	n.ch = make(chan struct{})
+func (n *Noop) init() {
+	n.once.Do(func() {
+		n.ch = make(chan struct{})
+	})
+}
+
+// Run blocks until shutdown
+func (n *Noop) Run() error {
+	n.init()
 	<-n.ch
 	return nil
 }
 
-func (n Noop) Shutdown(ctx context.Context) error {
+// Shutdown stops Run
+func (n *Noop) Shutdown(ctx context.Context) error {
+	n.init()
 	close(n.ch)
 	return nil
 }
 
-var _ Service = Noop{}
+var _ Service = &Noop{}

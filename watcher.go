@@ -9,16 +9,17 @@ import (
 
 // SignalWatcher allows easily hooking into os signals to shutdown long running services.
 type SignalWatcher struct {
-	// ShutdownContext creates the context that is passed to Shutdown.  If nil, will use context.Background
-	ShutdownContext func() context.Context
-	// ShutdownTimeout is an optional timeout to attach to the Shutdown context.  If empty, no timeout will be used.
-	ShutdownTimeout time.Duration
 	// Service is the Service that should receive a Shutdown signal.
 	Service Service
-	// Signals are the OS signals we should wait and signal on
-	Signals      []os.Signal
-	signalNotify func(c chan<- os.Signal, sig ...os.Signal)
-	ch           chan os.Signal
+	// Signals are the OS signals we should wait and signal on.  If this is empty, all signals will trigger Shutdown
+	Signals []os.Signal
+	// ShutdownContext creates the context that is passed to Shutdown.  Optional: if nil, will use context.Background.
+	ShutdownContext func() context.Context
+	// ShutdownTimeout is an optional timeout to attach to the Shutdown context.  Optional: if empty, no timeout will be used.
+	ShutdownTimeout time.Duration
+	signalNotify    func(c chan<- os.Signal, sig ...os.Signal)
+	signalStop      func(c chan<- os.Signal)
+	ch              chan os.Signal
 }
 
 // Setup ensures the signal channel is created and registered with the signal notifier.
@@ -49,7 +50,11 @@ func (w *SignalWatcher) Run() error {
 
 // Shutdown closes the run signal's channel
 func (w *SignalWatcher) Shutdown(ctx context.Context) error {
-	signal.Stop(w.ch)
+	if w.signalStop == nil {
+		signal.Stop(w.ch)
+	} else {
+		w.signalStop(w.ch)
+	}
 	close(w.ch)
 	return nil
 }

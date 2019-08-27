@@ -28,7 +28,7 @@ func errFromManyErrors(errs []error) error {
 		return nil
 	}
 	if len(nonNil) == 1 {
-		return nonNil[1]
+		return nonNil[0]
 	}
 	return &multiError{errs: nonNil}
 }

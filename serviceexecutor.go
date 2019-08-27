@@ -9,8 +9,8 @@ type Service interface {
 	// Run should block and not return until the service either has a fatal error during execution (returned via err)
 	// or Shutdown is called on the service.
 	Run() error
-	// Shutdown should end a current (and prevent future) Run() calls.  Shutdown should try to exit only when it is
-	// sure that Run() has finished.  It should not persist longer than the length of ctx.
+	// Shutdown should end a current Run() call.  Shutdown should try to exit only when it is
+	// sure that Run() has finished gracefully.  It should not persist longer than the length of ctx.
 	Shutdown(ctx context.Context) error
 }
 
@@ -18,5 +18,6 @@ type Service interface {
 // by Multi before Run is executed.
 type Setupable interface {
 	Service
+	// Setup is expected to be called once and before Run
 	Setup() error
 }
