@@ -21,7 +21,7 @@ type SignalWatcher struct {
 	ch           chan os.Signal
 }
 
-// Setup creates the channel that will watch for os signals
+// Setup ensures the signal channel is created and registered with the signal notifier.
 func (w *SignalWatcher) Setup() error {
 	w.ch = make(chan os.Signal, 1)
 	if w.signalNotify != nil {
