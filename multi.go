@@ -2,7 +2,6 @@ package serviceexecutor
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 )
@@ -13,6 +12,29 @@ type MultiHooks struct {
 	OnServiceRunFinished      func(s Service, err error)
 	OnServiceShutdownStarted  func(s Service)
 	OnServiceShutdownFinished func(s Service, err error)
+}
+
+func (m MultiHooks) onServiceRunStarted(s Service) {
+	if m.OnServiceRunStarted != nil {
+		m.OnServiceRunStarted(s)
+	}
+}
+
+func (m MultiHooks) onServiceRunFinished(s Service, err error) {
+	if m.OnServiceRunFinished != nil {
+		m.OnServiceRunFinished(s, err)
+	}
+}
+
+func (m MultiHooks) onServiceShutdownStarted(s Service) {
+	if m.OnServiceShutdownStarted != nil {
+		m.OnServiceShutdownStarted(s)
+	}
+}
+func (m MultiHooks) onServiceShutdownFinished(s Service, err error) {
+	if m.OnServiceShutdownFinished != nil {
+		m.OnServiceShutdownFinished(s, err)
+	}
 }
 
 // States: (init) -> (setup ran) -> (run) -> (shutdown) ->
@@ -58,7 +80,7 @@ func (m *Multi) Setup() error {
 // any goroutines, none will spawn.
 func (m *Multi) Run() error {
 	if atomic.SwapInt32(&m.runCalled, 1) == 1 {
-		return errors.New("run called twice")
+		return &repeatedCalls{msg: "run called twice"}
 	}
 	if !m.setupCalled {
 		if err := m.Setup(); err != nil {
@@ -66,7 +88,7 @@ func (m *Multi) Run() error {
 		}
 	}
 	wg := sync.WaitGroup{}
-	errs := make([]error, 0, len(m.Services))
+	errs := make([]error, len(m.Services))
 	m.runOnce.Do(func() {
 		for i, s := range m.Services {
 			wg.Add(1)
@@ -74,9 +96,9 @@ func (m *Multi) Run() error {
 			s := s
 			go func() {
 				defer wg.Done()
-				m.Hooks.OnServiceRunStarted(s)
+				m.Hooks.onServiceRunStarted(s)
 				err := s.Run()
-				m.Hooks.OnServiceRunFinished(s, err)
+				m.Hooks.onServiceRunFinished(s, err)
 				errs[i] = err
 			}()
 		}
@@ -89,18 +111,18 @@ func (m *Multi) Run() error {
 // Shutdown is called before we can call "Run" on services, it does nothing and returns nil.
 func (m *Multi) Shutdown(ctx context.Context) error {
 	if atomic.SwapInt32(&m.shutdownCalled, 1) == 1 {
-		return errors.New("shutdown called twice")
+		return &repeatedCalls{msg: "shutdown called twice"}
 	}
 	services := m.Services
 	m.runOnce.Do(func() {
 		services = nil
 	})
-	errs := make([]error, 0, len(services))
-	for i := len(services); i >= 0; i-- {
+	errs := make([]error, len(services))
+	for i := len(services) - 1; i >= 0; i-- {
 		s := services[i]
-		m.Hooks.OnServiceShutdownStarted(s)
+		m.Hooks.onServiceShutdownStarted(s)
 		err := s.Shutdown(ctx)
-		m.Hooks.OnServiceShutdownFinished(s, err)
+		m.Hooks.onServiceShutdownFinished(s, err)
 		errs[i] = err
 	}
 	return errFromManyErrors(errs)
