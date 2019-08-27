@@ -24,7 +24,9 @@ type SignalWatcher struct {
 
 // Setup ensures the signal channel is created and registered with the signal notifier.
 func (w *SignalWatcher) Setup() error {
-	w.ch = make(chan os.Signal, 1)
+	if w.ch == nil {
+		w.ch = make(chan os.Signal, 1)
+	}
 	if w.signalNotify != nil {
 		w.signalNotify(w.ch, w.Signals...)
 	} else {

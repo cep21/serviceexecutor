@@ -81,6 +81,7 @@ func TestMultiFull(t *testing.T) {
 		Service: &m,
 		Signals: []os.Signal{syscall.SIGQUIT},
 	}
+	require.NoError(t, w.Setup())
 	m.Services = append(m.Services, &w)
 	go func() {
 		time.Sleep(time.Millisecond)
