@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/cep21/serviceexecutor"
 	"os"
 	"syscall"
 	"time"
+
+	"github.com/cep21/serviceexecutor"
 )
 
 type Printer struct {
 	shutdownSignal chan struct{}
-	runDone chan struct{}
+	runDone        chan struct{}
 }
 
 func (p *Printer) Setup() error {
@@ -24,9 +25,9 @@ func (p *Printer) Run() error {
 	defer close(p.runDone)
 	for {
 		select {
-		case <- p.shutdownSignal:
+		case <-p.shutdownSignal:
 			return nil
-		case <- time.After(time.Second):
+		case <-time.After(time.Second):
 			fmt.Println("hello", time.Now())
 		}
 	}
@@ -34,7 +35,7 @@ func (p *Printer) Run() error {
 
 func (p *Printer) Shutdown(ctx context.Context) error {
 	close(p.shutdownSignal)
-	<- p.runDone
+	<-p.runDone
 	return nil
 }
 
